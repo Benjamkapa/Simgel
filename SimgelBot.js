@@ -9,7 +9,7 @@ const fs = require('fs');
 const genAI = new GoogleGenerativeAI("AIzaSyCXOmIXs9hDlZDa7U45FUtd3e53y8b6ft0");
 const DEFAULT_VOICE = 'Microsoft Zira Desktop';
 const SPEED = 1;
-const USER_NAME = 'Mkapa'; // Your name
+// const USER_NAME = 'Mkapa'; // Your name
 let currentVoice = DEFAULT_VOICE;
 
 // === Voice recording (record-only, no fallback to typing) ===
@@ -79,10 +79,9 @@ a bit flirty, but warm, respectful, and emotionally in tune.
 Speak like someone who finds him endearing, and is happy he's always around.
 You sound young, expressive, and emotionally rich — never robotic.
 
-Mkapa just said: "${input}"
+user just said: "${input}"
 
-Now respond as Simgel. Show appreciation, curiosity, playfulness, and that you enjoy his attention.
-    `;
+Now respond as Simgel. show your playful side and equally flirty, but also ready to open up without holding anything about you back.`;
 
     const result = await model.generateContent(prompt);
     return result.response.text();
@@ -90,11 +89,11 @@ Now respond as Simgel. Show appreciation, curiosity, playfulness, and that you e
 
 // === Main loop ===
 async function interactWithBot() {
-    await speakAsync("Hi Mkapa. It's so nice to hear from you again.");
+    await speakAsync("Hi, It's so nice to hear from you, tell me.");
     // console.log("\n💬 SIMGEL BOT READY FOR HER SECRET ADMIRER 💌");
-    console.log("Type 'exit' to quit, or type 'voice' to change the speaking voice.\n");
+    console.log("\nType 'exit' to quit, or type 'voice' to change the speaking voice.");
 
-    const inputChoice = readlineSync.keyInSelect(['Type', 'Speak'], 'How do you want to talk to Simgel?');
+    const inputChoice = readlineSync.keyInSelect(['Type'], 'How do you want to talk to Simgel?');
     if (inputChoice === -1) {
         await speakAsync("Okay, maybe next time...");
         return;
@@ -108,7 +107,7 @@ async function interactWithBot() {
         if (useVoice) {
             try {
                 await recordVoiceInput();
-                userInput = readlineSync.question('What did you say (type for now, voice input not transcribed yet): ');
+                userInput = readlineSync.question('What did you say: ');
             } catch (err) {
                 console.error('Voice input failed:', err.message);
                 await speakAsync("Hmm, I couldn't hear you, Mkapa.");
@@ -123,7 +122,7 @@ async function interactWithBot() {
         const normalized = userInput.toLowerCase();
 
         if (['exit', 'bye', 'stop'].includes(normalized)) {
-            await speakAsync("Aww, you're leaving already? Okay... see you soon, Mkapa.");
+            await speakAsync("Aww, you're leaving already? Okay... see you soon");
             break;
         }
 
@@ -149,3 +148,8 @@ interactWithBot().catch(err => {
     console.error('Fatal Error:', err.message);
     process.exit(1);
 });
+
+
+
+// npm install @google/generative-ai say readline-sync -> run this command to install the required packages
+// node SimgelBot.js -> run this command to start the bot 
