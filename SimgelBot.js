@@ -1,8 +1,8 @@
-require('dotenv').config();
+// require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const say = require('say');
 const readlineSync = require('readline-sync');
-const Microphone = require('node-microphone');
+// const Microphone = require('node-microphone');
 const fs = require('fs');
 
 // === CONFIG ===
