@@ -3,9 +3,22 @@
     "version": "1.0.0",
     "private": true,
     "dependencies": {
-      "node-fetch": "^2.6.1"
+        "node-fetch": "^2.7.0"
     },
     "scripts": {
-      "dev": "netlify dev"
-    }
-  }
+        "dev": "netlify dev"
+    },
+    "description": "This project is a simple HTML application that demonstrates the use of HTML, CSS, and JavaScript to create an interactive webpage.",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Benjamkapa/Simgel.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Benjamkapa/Simgel/issues"
+    },
+    "homepage": "https://github.com/Benjamkapa/Simgel#readme"
+}

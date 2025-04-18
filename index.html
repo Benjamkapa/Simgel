@@ -1,123 +1,642 @@
-// filepath: index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simgel AI Chat</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simgel AI</title>
+  <style>
+    /* Same styles from before — untouched */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: comic sans ms; }
 
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            padding: 20px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.05);
-        }
+    body {
+      background: radial-gradient(circle at center, #1a1a1a, #0a0a0a);
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-        .message {
-            margin: 10px 0;
-            padding: 10px 15px;
-            border-radius: 15px;
-            max-width: 80%;
-        }
+    #mainContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
 
-        .user-message {
-            background: #4a5568;
-            margin-left: auto;
-        }
+    #orbContainer {
+      position: relative;
+      width: 60vw;
+      max-width: 500px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ff85c1, #4b0082);
+      box-shadow: 0 0 50px rgba(255, 105, 180, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: rippleIdle 4s infinite ease-in-out;
+      cursor: pointer;
+      overflow: hidden;
+    }
 
-        .ai-message {
-            background: #553c9a;
-            margin-right: auto;
-        }
+    #orbContainer.speaking {
+      animation: speakingPulse 2s infinite ease-in-out;
+      background: radial-gradient(circle, #ff85c1, #800080);
+    }
 
-        #input-container {
-            display: flex;
-            gap: 10px;
-        }
+    @keyframes rippleIdle {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 50px rgba(255, 105, 180, 0.2); }
+      50% { transform: scale(1.1); box-shadow: 0 0 80px rgba(255, 105, 180, 0.7); }
+    }
 
-        #user-input {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 16px;
-        }
+    @keyframes rippleSpeaking {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(255, 105, 180, 0.6); }
+      50% { transform: scale(1.2); box-shadow: 0 0 90px rgba(255, 182, 193, 1); }
+    }
 
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 25px;
-            background: #553c9a;
-            color: white;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
+    @keyframes speakingPulse {
+        0% { background: radial-gradient(circle, #ff85c1, #4b0082); }
+        50% { background: radial-gradient(circle, #ff9fd2, #800080); }
+        100% { background: radial-gradient(circle, #ff85c1, #4b0082); }
+    }
 
-        button:hover {
-            background: #6b46c1;
+    #responseText {
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 1rem;
+      max-width: 80%;
+      color: white;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      max-height: 100%;             /* Stay within the orb */
+      overflow: hidden;             /* Hide anything that goes outside the visible area */
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      transform-origin: center bottom;
+    }
+
+    .message-fade {
+        animation: fadeOut 1s ease-in forwards;
+        animation-delay: 10s;
+    }
+
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+
+    .message-enter {
+        animation: messageEnter 0.3s ease-out forwards;
+    }
+
+    @keyframes messageEnter {
+        from { 
+            transform: translateY(20px);
+            opacity: 0;
         }
-    </style>
+        to { 
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+      #inputContainer {
+        position: fixed;
+        bottom: 4rem;
+        left: 0;
+        display: none;
+        right: 0;
+        padding-inline: 2em;
+        padding-block: 1em;
+        backdrop-filter: blur(10px);
+        z-index: 10;
+    }
+
+    #toggleInputBtn {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        background: transparent;
+        /* color: black; */
+        border: none;
+        padding: 0.8rem 1rem;
+        /* border-radius: 50%; */
+        font-size: 1.4rem;
+        cursor: pointer;
+        /* z-index: 999; */
+        /* box-shadow: 0 0 15px rgba(255, 133, 193, 0.4); */
+      }
+
+      .hidden {
+        display: none;
+      }
+
+    @media screen and (min-width: 600px) {
+        #inputContainer {
+            width: 50em;
+            display: none;
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%);
+        }
+    }
+
+    #chatInput {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 25px;
+      background:  #0a0a0a;
+      color: white;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+      outline: 1px solid rgba(255, 105, 180, 0.3)
+    }
+
+    #chatInput:focus {
+      background:  #0a0a0a;
+    }
+
+    #historyBtn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: transparent;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      /* border-radius: 50%; */
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #historyModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 10;
+    }
+
+        #micStatus {
+        position: fixed;
+        font-family:monospace;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        /* background: rgba(255, 133, 193, 0.2); */
+        padding: 10px 20px;
+        border-radius: 20px;
+        /* backdrop-filter: blur(5px); */
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 100;
+    }
+
+    #micStatus.active {
+        opacity: 1;
+    }
+
+    #historyContent {
+      background: #1e1e1e;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+      border-radius: 15px;
+      color: white;
+    }
+
+    #historyContent h2 {
+      margin-bottom: 1rem;
+    }
+
+    .history-entry {
+      margin-bottom: 1rem;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+
+    .history-entry p {
+      margin: 5px 0;
+    }
+
+    #closeModal, #clearHistory {
+      background: #ff85c1;
+      color: black;
+      padding: 0.5rem 1rem;
+      margin-top: 1rem;
+      margin-right: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <div id="chat-container"></div>
-    <div id="input-container">
-        <input type="text" id="user-input" placeholder="Type your message...">
-        <button onclick="sendMessage()">Send</button>
+  <div id="mainContainer">
+    <div id="orbContainer">
+      <div id="responseText"></div>
     </div>
+  </div>
 
-    <script>
-        const chatContainer = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
+  <div id="inputContainer">
+    <input id="chatInput" type="text" placeholder="Write to Simgel..." autocomplete="off" />
+  </div>
 
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (!message) return;
+  <button id="historyBtn">📜</button>
 
-            // Add user message to chat
-            addMessage(message, 'user');
-            userInput.value = '';
+  <div id="historyModal">
+    <div id="historyContent">
+      <h2>💬 Chat History</h2>
+      <div id="historyList"></div>
+      <button id="clearHistory">Clear</button>
+      <button id="closeModal">Close</button>
+    </div>
+  </div>
+                           
+  <!-- Add this after the historyModal div -->
+  <div id="micStatus">🎤 Listening...</div>
 
-            try {
-                const response = await fetch('/.netlify/functions/ai-handler', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ input: message })
-                });
+  <button id="toggleInputBtn">✏️</button>
 
-                const data = await response.json();
-                addMessage(data.response, 'ai');
-            } catch (error) {
-                console.error('Error:', error);
-                addMessage('Sorry, I encountered an error.', 'ai');
+  <script>
+    const orb = document.getElementById("orbContainer");
+    const responseText = document.getElementById("responseText");
+    const chatInput = document.getElementById("chatInput");
+    const historyModal = document.getElementById("historyModal");
+    const historyList = document.getElementById("historyList");
+    const closeModal = document.getElementById("closeModal");
+    const clearHistory = document.getElementById("clearHistory");
+
+    let chatHistory = [];
+
+    // Try native or fallback to webkit
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    if (recognition) {
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+    }
+
+    function removeEmojis(text) {
+      return text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2702}-\u{27B0}\u{24C2}-\u{1F251}\u{1F900}-\u{1F9FF}\u{1F910}-\u{1F93F}]/gu, '');
+    }
+
+    function cleanText(text) {
+        // Remove emojis
+        text = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2702}-\u{27B0}\u{24C2}-\u{1F251}\u{1F900}-\u{1F9FF}\u{1F910}-\u{1F93F}]/gu, '');
+        // Remove asterisks and surrounding spaces
+        text = text.replace(/\s*\*\s*/g, ' ');
+        // Clean up multiple spaces
+        text = text.replace(/\s+/g, ' ').trim();
+        return text;
+    }
+
+    // Replace the existing handleInput function with this version
+    async function handleInput(input) {
+        if (!input.trim()) return;
+        
+        console.log('🎯 Sending to backend:', input);
+        chatInput.value = "";
+
+        // Always show thinking state first
+        responseText.style.opacity = 1;
+        responseText.innerHTML = '<div class="message-enter">💭 Thinking...</div>';
+        scrollToBottom();
+
+        // Check for exit command
+        if (isExitCommand(input)) {
+            await speakSimgel("Goodbye! Have a great day!");
+            setTimeout(() => {
+                document.body.innerHTML = `
+                    <div style="height: 100vh; display: flex; align-items: center; 
+                               justify-content: center; background: radial-gradient(circle at center, #1a1a1a, #0a0a0a);">
+                        <h1 style="color: white; font-family: 'Segoe UI', sans-serif;">
+                            Session ended. You can close this window.
+                        </h1>
+                    </div>
+                `;
+            }, 2000);
+            return;
+        }
+
+        try {
+            const res = await fetch("/.netlify/functions/ai-handler", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ input })
+            });
+
+            const data = await res.json();
+            console.log('📥 Received from backend:', data);
+            const msg = data.response || "I'm here";
+            speakSimgel(msg, input);
+        } catch (error) {
+            console.error('❌ Backend Error:', error);
+            speakSimgel("Sorry, I'm having trouble connecting right now 🥺", input);
+        }
+    }
+
+    // Replace the speakSimgel function
+    function speakSimgel(text, input = "") {
+        const synth = window.speechSynthesis;
+        const cleanedText = cleanText(text);
+        const utterance = new SpeechSynthesisUtterance(cleanedText);
+
+        // Get voices and set preferred voice
+        const voices = synth.getVoices();
+        const preferredVoice = voices.find(v => 
+            v.name.includes("Hazel") || 
+            v.name.includes("Zira") || 
+            v.name.includes("Female")
+        ) || voices[0];
+        
+        utterance.voice = preferredVoice;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+
+        utterance.onstart = () => {
+            orb.classList.add("speaking");
+            responseText.innerHTML = `<div class="message-enter">${text}</div>`;
+            responseText.style.opacity = 1;
+            responseText.scrollTop = responseText.scrollHeight;
+        };
+
+        utterance.onend = () => {
+            orb.classList.remove("speaking");
+            
+            // Start listening again after response
+            if (recognition && !recognition.listening) {
+                setTimeout(() => {
+                    startVoiceInput();
+                }, 500);
             }
+
+            // Add fade out class after speech ends
+            const messageDiv = responseText.querySelector('.message-enter');
+            if (messageDiv) {
+                messageDiv.classList.add('message-fade');
+                
+                // Remove message after fade animation
+                setTimeout(() => {
+                    responseText.style.opacity = 0;
+                }, 10000); // 10 seconds
+            }
+        };
+
+        // Cancel any ongoing speech
+        synth.cancel();
+        
+        // Start new speech
+        synth.speak(utterance);
+
+        if (input) {
+            chatHistory.push({ 
+                user: input, 
+                simgel: text,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+
+    // Add this function for scroll management
+    function scrollToBottom() {
+        const mainContainer = document.querySelector('#mainContainer');
+        mainContainer.scrollTop = mainContainer.scrollHeight;
+        
+        // Also scroll the response text if it overflows
+        if (responseText.scrollHeight > responseText.clientHeight) {
+            responseText.scrollTop = responseText.scrollHeight;
+        }
+    }
+
+    // Add observer for auto-scrolling on content changes
+    const observer = new MutationObserver(scrollToBottom);
+    observer.observe(responseText, { 
+        childList: true, 
+        subtree: true, 
+        characterData: true 
+    });
+
+    // Replace the startVoiceInput function with this enhanced version
+    function startVoiceInput() {
+        if (!recognition) {
+            alert("Speech recognition is not supported in this browser.");
+            return;
         }
 
-        function addMessage(text, sender) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}-message`;
-            messageDiv.textContent = text;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        const micStatus = document.getElementById("micStatus");
+        
+        // If already listening, stop
+        if (recognition.listening) {
+            recognition.stop();
+            return;
         }
 
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-    </script>
+        let silenceTimer = null;
+        let lastSpeechTime = Date.now();
+        let finalTranscript = '';
+
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.start();
+        micStatus.classList.add("active");
+        micStatus.innerHTML = '🎤 Listening...';
+        orb.classList.add("speaking");
+
+        recognition.onstart = () => {
+            console.log("🎤 Started listening...");
+            lastSpeechTime = Date.now();
+            finalTranscript = '';
+        };
+
+        recognition.onresult = (event) => {
+            lastSpeechTime = Date.now();
+            
+            let interimTranscript = '';
+            
+            // Accumulate all results
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                
+                if (event.results[i].isFinal) {
+                    finalTranscript = transcript;
+                    console.log('🎤 Final part:', finalTranscript);
+                } else {
+                    interimTranscript = transcript;
+                    console.log('🎤 Hearing:', interimTranscript);
+                }
+            }
+
+            // Show interim results in input field
+            chatInput.value = interimTranscript || finalTranscript;
+
+            // Reset silence detection
+            clearTimeout(silenceTimer);
+            silenceTimer = setTimeout(() => {
+                // Only stop if we have actual content and 3 seconds of silence
+                if (Date.now() - lastSpeechTime > 3000 && (finalTranscript || interimTranscript)) {
+                    console.log('🎤 Silence detected, stopping...');
+                    recognition.stop();
+                    if (finalTranscript || interimTranscript) {
+                        handleInput(finalTranscript || interimTranscript);
+                    }
+                }
+            }, 3000); // Wait 3 seconds of silence before stopping
+        };
+
+        recognition.onerror = (event) => {
+            console.error("❌ Speech recognition error:", event.error);
+            orb.classList.remove("speaking");
+            micStatus.classList.remove("active");
+            isListening = false;
+        };
+
+        recognition.onend = () => {
+            console.log("🎤 Recognition ended");
+            orb.classList.remove("speaking");
+            micStatus.classList.remove("active");
+            clearTimeout(silenceTimer);
+            recognition.listening = false;
+
+            // If recognition ends with content but no final result, send what we have
+            if (!finalTranscript && chatInput.value) {
+                handleInput(chatInput.value);
+            }
+        };
+
+        // Add longer maximum duration (45 seconds)
+        setTimeout(() => {
+            if (isListening) {
+                console.log("🎤 Maximum duration reached");
+                recognition.stop();
+            }
+        }, 45000);
+
+        // Update micStatus text based on state
+        micStatus.innerHTML = 'Tap to stop/start';
+    }
+
+    // Update the recognition.onend handler
+    recognition.onend = () => {
+        console.log("🎤 Recognition ended");
+        orb.classList.remove("speaking");
+        micStatus.classList.remove("active");
+        clearTimeout(silenceTimer);
+        recognition.listening = false;
+
+        if (!finalTranscript && chatInput.value) {
+            handleInput(chatInput.value);
+        }
+    };
+
+    // Replace the orb click handler and add speech control functions
+    function toggleSpeech() {
+        const synth = window.speechSynthesis;
+        if (synth.speaking) {
+            synth.cancel();
+            orb.classList.remove("speaking");
+            return true; // Speech was stopped
+        }
+        return false; // No speech was playing
+    }
+
+    orb.addEventListener("click", () => {
+        // If speech is playing, stop it
+        if (toggleSpeech()) {
+            return; // Exit if we just stopped speech
+        }
+        
+        // If not speaking, start voice input
+        startVoiceInput();
+    });
+
+    // Update the click-away handler
+    document.addEventListener('click', (event) => {
+        if (!orb.contains(event.target) && recognition) {
+            console.log('🎤 Clicked away, stopping recognition');
+            recognition.stop();
+        }
+    });
+
+    // Add real-time input monitoring
+    chatInput.addEventListener("input", (e) => {
+        console.log('⌨️ Current input:', e.target.value);
+    });
+
+    chatInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleInput(chatInput.value);
+      }
+    });
+
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+
+    window.addEventListener("load", () => {
+      speakSimgel("Hi! I'm Simgel. Tap me or type to chat!");
+    });
+
+    document.getElementById("historyBtn").addEventListener("click", () => {
+      updateHistoryModal();
+      historyModal.style.display = "flex";
+    });
+
+    closeModal.addEventListener("click", () => {
+      historyModal.style.display = "none";
+    });
+
+    clearHistory.addEventListener("click", () => {
+      chatHistory = [];
+      updateHistoryModal();
+    });
+
+    function updateHistoryModal() {
+      historyList.innerHTML = "";
+      chatHistory.forEach((entry) => {
+        const div = document.createElement("div");
+        div.classList.add("history-entry");
+        div.innerHTML = `
+          <p><strong>You:</strong> ${entry.user}</p>
+          <p><strong>Simgel:</strong> ${entry.simgel}</p>
+        `;
+        historyList.appendChild(div);
+      });
+    }
+    
+    const toggleInputBtn = document.getElementById("toggleInputBtn");
+    const inputContainer = document.getElementById("inputContainer");
+
+    toggleInputBtn.addEventListener("click", () => {
+      if (inputContainer.style.display === "none" || !inputContainer.style.display) {
+        inputContainer.style.display = "block";
+        chatInput.focus();
+      } else {
+        inputContainer.style.display = "none";
+      }
+    });
+
+    function isExitCommand(text) {
+        const exitPhrases = ['bye', 'exit', 'exit program', 'see you later', 'see you', 'goodbye'];
+        return exitPhrases.some(phrase => text.toLowerCase().includes(phrase));
+    }
+
+  </script>
 </body>
 </html>
