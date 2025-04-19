@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-orbitcontrols@2.110.3/OrbitControls.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
   <title>Simgel AI</title>
   <style>
     /* Same styles from before — untouched */
@@ -17,6 +20,31 @@
       flex-direction: column;
       overflow: hidden;
     }
+
+    /* Add to your existing style section */
+      #orbScene {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1;
+      }
+
+      #orbContainer {
+          position: relative;
+          z-index: 2;
+          background: transparent;
+      }
+
+      .particle {
+          position: absolute;
+          background: radial-gradient(circle, #fff, transparent);
+          border-radius: 50%;
+          pointer-events: none;
+          transition: all 0.3s ease;
+      }
 
     #mainContainer {
       flex: 1;
@@ -305,6 +333,11 @@
         return text;
     }
 
+    // Add these variables at the top of your script section
+    let completeUtterance = '';
+    let typingTimer;
+    const TYPING_DELAY = 1000; // 1 second delay
+
     // Replace the existing handleInput function with this version
     async function handleInput(input) {
         if (!input.trim()) return;
@@ -464,39 +497,35 @@
             finalTranscript = '';
         };
 
+        // Update the recognition.onresult handler in startVoiceInput function
         recognition.onresult = (event) => {
             lastSpeechTime = Date.now();
-            
             let interimTranscript = '';
             
-            // Accumulate all results
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                
-                if (event.results[i].isFinal) {
-                    finalTranscript = transcript;
-                    console.log('🎤 Final part:', finalTranscript);
-                } else {
-                    interimTranscript = transcript;
-                    console.log('🎤 Hearing:', interimTranscript);
-                }
+            // Build complete utterance from all results
+            completeUtterance = Array.from(event.results)
+                .map(result => result[0].transcript)
+                .join(' ');
+            
+            // Show current transcription in input field
+            if (event.results[event.results.length - 1].isFinal) {
+                finalTranscript = completeUtterance;
+                console.log('🎤 Complete utterance:', finalTranscript);
+                chatInput.value = finalTranscript;
+            } else {
+                interimTranscript = event.results[event.results.length - 1][0].transcript;
+                chatInput.value = completeUtterance + ' ' + interimTranscript;
             }
-
-            // Show interim results in input field
-            chatInput.value = interimTranscript || finalTranscript;
 
             // Reset silence detection
             clearTimeout(silenceTimer);
             silenceTimer = setTimeout(() => {
-                // Only stop if we have actual content and 3 seconds of silence
-                if (Date.now() - lastSpeechTime > 3000 && (finalTranscript || interimTranscript)) {
-                    console.log('🎤 Silence detected, stopping...');
+                if (Date.now() - lastSpeechTime > 3000 && finalTranscript) {
+                    console.log('🎤 Speech completed, sending:', finalTranscript);
                     recognition.stop();
-                    if (finalTranscript || interimTranscript) {
-                        handleInput(finalTranscript || interimTranscript);
-                    }
+                    handleInput(finalTranscript);
                 }
-            }, 3000); // Wait 3 seconds of silence before stopping
+            }, 3000);
         };
 
         recognition.onerror = (event) => {
@@ -573,16 +602,21 @@
         }
     });
 
-    // Add real-time input monitoring
+    // Update the chatInput event listener to use debouncing
     chatInput.addEventListener("input", (e) => {
-        console.log('⌨️ Current input:', e.target.value);
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            console.log('⌨️ Typing completed:', e.target.value);
+        }, TYPING_DELAY);
     });
 
+    // Update the keypress handler to only send on Enter
     chatInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleInput(chatInput.value);
-      }
+        if (e.key === "Enter") {
+            e.preventDefault();
+            clearTimeout(typingTimer);
+            handleInput(chatInput.value);
+        }
     });
 
     window.speechSynthesis.onvoiceschanged = () => {

@@ -18,3 +18,4 @@ This project is a simple HTML application that demonstrates the use of HTML, CSS
 
 ## Contributing
 Feel free to submit issues or pull requests for any improvements or features you would like to see.
+
