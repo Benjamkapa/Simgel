@@ -299,6 +299,9 @@
 
   <button id="toggleInputBtn">✏️</button>
 
+  <!-- Add this after your existing audio element -->
+  <audio id="exitMusic" src="idle-music.mp3" preload="auto"></audio>
+
   <script>
     const orb = document.getElementById("orbContainer");
     const responseText = document.getElementById("responseText");
@@ -350,18 +353,50 @@
         responseText.innerHTML = '<div class="message-enter">💭 Thinking...</div>';
         scrollToBottom();
 
-        // Check for exit command
+        // Replace the existing exit command block in handleInput function
         if (isExitCommand(input)) {
             await speakSimgel("Goodbye! Have a great day!");
             setTimeout(() => {
                 document.body.innerHTML = `
-                    <div style="height: 100vh; display: flex; align-items: center; 
-                               justify-content: center; background: radial-gradient(circle at center, #1a1a1a, #0a0a0a);">
-                        <h1 style="color: white; font-family: 'Segoe UI', sans-serif;">
+                    <div style="height: 100vh; display: flex; flex-direction: column; 
+                               align-items: center; justify-content: center; 
+                               background: radial-gradient(circle at center, #1a1a1a, #0a0a0a);">
+                        <h1 style="color: white; font-family: 'Segoe UI', sans-serif; margin-bottom: 20px;">
                             Session ended. You can close this window.
                         </h1>
+                        <p style="color: #888; font-size: 16px;">
+                            (A tune will play in a few. close this tab to avoid it🤓..)
+                        </p>
+                        <audio id="exitMusic" src="assets/idle-music.mp3"></audio>
                     </div>
                 `;
+
+                // Play exit music after 5 seconds
+                setTimeout(() => {
+                    const exitMusic = document.getElementById('exitMusic');
+                    if (exitMusic) {
+                        exitMusic.volume = 0.1; // Start volume low at 10%
+                        exitMusic.loop = false; // Ensure it only plays once
+                        exitMusic.play()
+                            .then(() => {
+                                // Gradually increase volume to 50% over 5 seconds
+                                let volume = 0.1;
+                                const targetVolume = 0.5;
+                                const step = (targetVolume - volume) / (5 * 10); // 5 seconds, 10 steps per second
+                                const interval = setInterval(() => {
+                                    volume += step;
+                                    if (volume >= targetVolume) {
+                                        volume = targetVolume;
+                                        clearInterval(interval);
+                                    }
+                                    exitMusic.volume = volume;
+                                }, 100);
+                                // Remove audio element after it finishes playing
+                                exitMusic.onended = () => exitMusic.remove();
+                            })
+                            .catch(err => console.log('Audio playback failed:', err));
+                    }
+                }, 10000); // 5 seconds delay
             }, 2000);
             return;
         }
@@ -426,7 +461,7 @@
                 // Remove message after fade animation
                 setTimeout(() => {
                     responseText.style.opacity = 0;
-                }, 10000); // 10 seconds
+                }, 3000); // 3 seconds
             }
         };
 
