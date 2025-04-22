@@ -164,7 +164,7 @@
         display: none;
       }
 
-    @media screen and (min-width: 600px) {
+    @media screen and (min-width: 670px) {
         #inputContainer {
             width: 50em;
             display: none;
@@ -283,7 +283,7 @@
     <input id="chatInput" type="text" placeholder="Write to Simgel..." autocomplete="off" />
   </div>
 
-  <button id="historyBtn">📜</button>
+  <button id="historyBtn" title="History">📜</button>
 
   <div id="historyModal">
     <div id="historyContent">
@@ -297,10 +297,11 @@
   <!-- Add this after the historyModal div -->
   <div id="micStatus">🎤 Listening...</div>
 
-  <button id="toggleInputBtn">✏️</button>
+  <button id="toggleInputBtn" title="Click to write">✏️</button>
 
   <!-- Add this after your existing audio element -->
   <audio id="exitMusic" src="idle-music.mp3" preload="auto"></audio>
+  <audio id="song3Audio" src="song3.mp3" preload="auto"></audio>
 
   <script>
     const orb = document.getElementById("orbContainer");
@@ -339,7 +340,7 @@
     // Add these variables at the top of your script section
     let completeUtterance = '';
     let typingTimer;
-    const TYPING_DELAY = 1000; // 1 second delay
+    const TYPING_DELAY = 2000; // 2 seconds delay
 
     // Replace the existing handleInput function with this version
     async function handleInput(input) {
@@ -358,18 +359,20 @@
             await speakSimgel("Goodbye! Have a great day!");
             setTimeout(() => {
                 document.body.innerHTML = `
-                    <div style="height: 100vh; display: flex; flex-direction: column; 
+                    <div style="color: teal; height: 100vh; display: flex; flex-direction: column; text-align: center;
                                align-items: center; justify-content: center; 
                                background: radial-gradient(circle at center, #1a1a1a, #0a0a0a);">
-                        <h1 style="color: white; font-family: 'Segoe UI', sans-serif; margin-bottom: 20px;">
-                            Session ended. You can close this window.
+                        <h1 style="font-family: 'Segoe UI', sans-serif; margin-bottom: 20px;">
+                            Session Ended!
                         </h1>
-                        <p style="color: #888; font-size: 16px;">
-                            (A tune will play in a few. close this tab to avoid it🤓..)
-                        </p>
+                        <p style="font-family: comic sans ms; margin-bottom: 20px; font-style: italic; text-align: center;">
+                            To stop the impending tune, please close the tab or refresh the page 
+                            </p>
                         <audio id="exitMusic" src="assets/idle-music.mp3"></audio>
                     </div>
                 `;
+
+
 
                 // Play exit music after 5 seconds
                 setTimeout(() => {
@@ -396,7 +399,7 @@
                             })
                             .catch(err => console.log('Audio playback failed:', err));
                     }
-                }, 10000); // 5 seconds delay
+                }, 15000); // 5 seconds delay
             }, 2000);
             return;
         }
@@ -408,14 +411,25 @@
                 body: JSON.stringify({ input })
             });
 
-            const data = await res.json();
-            console.log('📥 Received from backend:', data);
-            const msg = data.response || "I'm here";
-            speakSimgel(msg, input);
-        } catch (error) {
-            console.error('❌ Backend Error:', error);
-            speakSimgel("Sorry, I'm having trouble connecting right now 🥺", input);
+        const data = await res.json();
+        console.log('📥 Received from backend:', data);
+        const msg = data.response || "My brain's drained" + " 🤖💤";
+
+        // Play song3 if playSongUrl is present
+        if (data.playSongUrl) {
+          const songAudio = document.getElementById("song3Audio");
+          if (songAudio) {
+            songAudio.volume = 0.5;
+            songAudio.loop = true;
+            songAudio.play().catch(err => console.error("Audio play error:", err));
+          }
         }
+
+        speakSimgel(msg, input);
+      } catch (error) {
+        console.error('❌ Backend Error:', error);
+        speakSimgel("Sorry, I'm having trouble connecting right now 🥺", input);
+      }
     }
 
     // Replace the speakSimgel function
@@ -637,15 +651,16 @@
         }
     });
 
-    // Update the chatInput event listener to use debouncing
+    // Update the chatInput event listener to use debouncing and send input after typing stops
     chatInput.addEventListener("input", (e) => {
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => {
             console.log('⌨️ Typing completed:', e.target.value);
+            handleInput(e.target.value);
         }, TYPING_DELAY);
     });
 
-    // Update the keypress handler to only send on Enter
+    // Update the keypress handler to only send on Enter (optional, can be kept or removed)
     chatInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -659,8 +674,26 @@
     };
 
     window.addEventListener("load", () => {
-      speakSimgel("Hi! I'm Simgel. Tap me or type to chat!");
+      speakSimgel("Hi! I'm Simgel. Tap or type to chat!");
     });
+
+    // Modify speech recognition onend to send input only after speech ends
+    if (recognition) {
+        recognition.onend = () => {
+            console.log("🎤 Recognition ended");
+            orb.classList.remove("speaking");
+            micStatus.classList.remove("active");
+            clearTimeout(silenceTimer);
+            recognition.listening = false;
+
+            if (completeUtterance) {
+                handleInput(completeUtterance);
+                completeUtterance = '';
+            } else if (chatInput.value) {
+                handleInput(chatInput.value);
+            }
+        };
+    }
 
     document.getElementById("historyBtn").addEventListener("click", () => {
       updateHistoryModal();
